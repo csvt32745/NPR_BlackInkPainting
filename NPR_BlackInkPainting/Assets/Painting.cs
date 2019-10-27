@@ -17,7 +17,7 @@ public class Painting : MonoBehaviour
 
     public int nodeCountRefreshThreshold = 50;
     int nodeCount;
-    Vector2 avgDirection;
+    public Vector2 avgDirection;
     float[] curMousePos;
     float curPressure;
 
@@ -67,9 +67,16 @@ public class Painting : MonoBehaviour
     {
         ReadPixelsIntoSavedTexture();
 
+        /******************
+            Input Process
+
+        ******************/
         if(Input.GetKey(KeyCode.R)){
             ClearCanvasTexture();
         }
+
+        ;
+        brushSize = Mathf.Clamp(brushSize + Input.mouseScrollDelta.y * 5f, 10f, 100f);
 
         if(Input.GetMouseButtonDown(0)){
             // Start painting
@@ -93,29 +100,33 @@ public class Painting : MonoBehaviour
         
 
         if(isPainting && normalizedStrokeTime < 1f){
+            /******************
+                Calculate stroke info
+
+             ******************/
+
             curMousePos = new float[2]{
                 Input.mousePosition.x,
                 Input.mousePosition.y
             };
 
-            float pressureMult = (1f - Mathf.Pow(2*normalizedStrokeTime - 1f, 2));
-            curPressure = Mathf.Lerp(pressureMult, 1f, 0.3f) * brushSize;
-            curInk = initialInk * (1f- Mathf.Pow(normalizedStrokeTime, 2));
-            
             Vector2 mouseDir = new Vector2(
                 curMousePos[0] - lastMousePos[0],
                 curMousePos[1] - lastMousePos[1]
             );
 
-            paintingMat.EnableKeyword("PAINTING_ON");
-            SetShaderData();
-
-            // Calculate average direction of a stroke
+            float pressureMult = (1f - Mathf.Pow(2*normalizedStrokeTime - 1f, 2));
+            curPressure = Mathf.Lerp(pressureMult, 1f, 0.3f) * brushSize;
+            //    * (1f + 0.3f *Mathf.Clamp01(Mathf.Sqrt(mouseDir.magnitude / 200)));
+            curInk = initialInk * (1f- Mathf.Pow(normalizedStrokeTime, 4)) 
+                * (1f - 0.8f*Mathf.Clamp01(Mathf.Sqrt(mouseDir.magnitude / 200)));
+            curInk = Mathf.Lerp(curInk, lastInk, 0.2f);
+            // Calculate average direction of a stroke  
             nodeCount++;
             if(nodeCount > 0){
                 if(Vector2.Dot(mouseDir, avgDirection) < 0 || nodeCount > nodeCountRefreshThreshold){
                     // If direction change too much or the stroke last too long, reset
-                    avgDirection = Vector2.zero;
+                    avgDirection = Vector2.Lerp(avgDirection, mouseDir, 0.9f);
                     nodeCount = 0;
                 }
                 else {
@@ -123,11 +134,19 @@ public class Painting : MonoBehaviour
                     avgDirection = (avgDirection*(nodeCount-1)+mouseDir*5)/(nodeCount+4);
                 }
             }
+
+            // Set Shader info
+            paintingMat.EnableKeyword("PAINTING_ON");
+            SetShaderData();
             
+            /******************
+                Update last timestamp info
+                
+             ******************/
             lastMousePos = curMousePos;
             lastPressure = curPressure;
             lastInk = curInk;
-            normalizedStrokeTime += 0.5f * Time.deltaTime + 0.0005f * mouseDir.magnitude;
+            normalizedStrokeTime += 0.1f * Time.deltaTime + 0.001f * mouseDir.magnitude;
         }
         else{
             paintingMat.DisableKeyword("PAINTING_ON");

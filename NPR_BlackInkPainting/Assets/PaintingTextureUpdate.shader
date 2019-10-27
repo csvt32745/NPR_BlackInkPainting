@@ -57,14 +57,17 @@
                 fixed expectedWidth = lerp(_LastPressure, _Pressure, pow(projectLen / deltaDist, 2));
 
                 fixed density = 0;
+                bool isRender = false;
                 if(     dot(lastMouseDir, deltaDir) > 0
                     &&  dot(curMouseDir, deltaDir) < 0
                     &&  length(normalOnMouseDelta) < expectedWidth)
                 {
-                    density = 1;
+                    //density = 1;
+                    isRender = true;
                 }
                 else if(curDist < _Pressure){
-                    density = 1;
+                    //density = 1;
+                    isRender = true;
                 }
                 
                 // To prevent from painting pixel repeatly
@@ -74,9 +77,10 @@
                     2.  The first rendering in the stroke (time == 0)
                     3.  For forth-back stroke to accept painting repeatly
                 */
-                if( (lastDist < _LastPressure) == false 
+                if( ((lastDist < _LastPressure) == false 
                     || _StrokeTime == 0
-                    || dot(deltaDir, fixed2(_AvgMouseDir[0], _AvgMouseDir[1])) < -0.5)
+                    || dot(deltaDir, normalize(fixed2(_AvgMouseDir[0], _AvgMouseDir[1]))) < -0.1
+                    )&& isRender)
                 {
                     /*********************
                         TODO:
@@ -84,11 +88,25 @@
                         (constraint with INK, Water, DirectionChange?)
 
                      *********************/
+                    density = 1;
                     fixed projectRatio = (projectLen) / (deltaDist + _Pressure);
                     if(projectRatio >= 0)
                         density *= lerp(_LastInk, _Ink, projectRatio);
-                    //density *= _LastInk;
+                    
+                    /*
+                    fixed2 avgMouseDir = fixed2(_AvgMouseDir[0], _AvgMouseDir[1]);
                 
+                    if(sign(_AvgMouseDir[0]*deltaDir.y - _AvgMouseDir[1]*deltaDir.x)
+                    == sign(deltaDir.x*lastMouseDir.y - deltaDir.y*lastMouseDir.x))
+                    {
+                        density *= (1 + saturate(length(normalOnMouseDelta)/expectedWidth)*0.5);
+                        //density
+                    }
+                    else{
+                        density *= (1 - saturate(length(normalOnMouseDelta)/expectedWidth)*0.5);
+                    }
+                    */
+
                     col.xyz -= fixed3(density, density, density);
                 }
 
