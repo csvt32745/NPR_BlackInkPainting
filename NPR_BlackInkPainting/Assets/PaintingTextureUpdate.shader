@@ -20,6 +20,8 @@
             sampler2D _PaintingTexture;
             sampler2D _Tex;
 
+            float _StrokeTime;
+
             float _LastMousePos[2];
             float _MousePos[2];
             float _AvgMouseDir[2];
@@ -65,10 +67,16 @@
                 }
                 density *= 0.5;
                 
-                // BUG : Cannot add ink in the exactly same place
                 // To prevent from painting pixel repeatly
+                /* 
+                    Within one of the following condition
+                    1.  Not in the last brush zone
+                    2.  The first rendering in the stroke (time == 0)
+                    3.  For forth-back stroke to accept painting repeatly
+                */
                 if( (lastDist < _LastPressure) == false 
-                    || dot(deltaDir, fixed2(_AvgMouseDir[0], _AvgMouseDir[1])) < 0)
+                    || _StrokeTime == 0
+                    || dot(deltaDir, fixed2(_AvgMouseDir[0], _AvgMouseDir[1])) < -0.5)
                 {
                     /*********************
                         TODO:
@@ -76,6 +84,7 @@
                         (constraint with INK, Water, DirectionChange?)
 
                      *********************/
+                    
                     col.xyz -= fixed3(density, density, density);
                 }
 

@@ -71,11 +71,11 @@ public class Painting : MonoBehaviour
 
         if(Input.GetMouseButtonDown(0)){
             isPainting = true;
-            normalizedStrokeTime = 1;
+            normalizedStrokeTime = 0;
             nodeCount = -1;
             avgDirection = Vector2.zero;
 
-            lastPressure = (1 - Mathf.Pow(2*normalizedStrokeTime-1, 2)*0.5f) * brushSize;
+            lastPressure = 0.5f * brushSize;
             lastMousePos = new float[2]{
                 Input.mousePosition.x,
                 Input.mousePosition.y
@@ -86,18 +86,19 @@ public class Painting : MonoBehaviour
         }
         
 
-        if(isPainting && normalizedStrokeTime > Mathf.Epsilon){
+        if(isPainting && normalizedStrokeTime < 1f){
             curMousePos = new float[2]{
                 Input.mousePosition.x,
                 Input.mousePosition.y
             };
-            curPressure = (1 - Mathf.Pow(2*normalizedStrokeTime-1, 2)*0.5f) * brushSize;
+
+            float pressureMult = (1f - Mathf.Pow(2*normalizedStrokeTime - 1f, 2));
+            curPressure = Mathf.Lerp(pressureMult, 1f, 0.3f) * brushSize;
 
             Vector2 mouseDir = new Vector2(
                 curMousePos[0] - lastMousePos[0],
                 curMousePos[1] - lastMousePos[1]
             );
-            normalizedStrokeTime -= 0.5f * Time.deltaTime + 0.0005f * mouseDir.magnitude;
 
             paintingMat.EnableKeyword("PAINTING_ON");
             SetShaderData();
@@ -118,6 +119,7 @@ public class Painting : MonoBehaviour
             
             lastMousePos = curMousePos;
             lastPressure = curPressure;
+            normalizedStrokeTime += 0.5f * Time.deltaTime + 0.0005f * mouseDir.magnitude;
         }
         else{
             paintingMat.DisableKeyword("PAINTING_ON");
@@ -130,10 +132,10 @@ public class Painting : MonoBehaviour
     }
 
     void SetShaderData(){
-
+        paintingMat.SetFloat("_StrokeTime", normalizedStrokeTime);
+        Debug.Log(normalizedStrokeTime);
         paintingMat.SetFloatArray("_LastMousePos", lastMousePos);
         paintingMat.SetFloatArray("_MousePos", curMousePos);
-
         paintingMat.SetFloatArray("_AvgMouseDir", new float[2]{avgDirection.x, avgDirection.y});
 
         paintingMat.SetFloat("_LastPressure", lastPressure);
