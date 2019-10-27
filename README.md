@@ -1,2 +1,2 @@
 # NPR_BlackInkPainting
-2019 Fall NonPhotoRealistic Course in NCTU
+NonPhotorealistic Rendering course in NCTU, 2019 Fall
