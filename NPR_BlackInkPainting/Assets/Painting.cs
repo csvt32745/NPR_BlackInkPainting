@@ -5,7 +5,9 @@ public class Painting : MonoBehaviour
 {
 
     public float brushSize = 10;
-    float initialInk = 1;
+    [Range(0, 1)] public float initialInk = 1;
+    float curInk;
+    float lastInk;
     float normalizedStrokeTime;
     public CustomRenderTexture paintingTex;
     public Material paintingMat;
@@ -70,10 +72,14 @@ public class Painting : MonoBehaviour
         }
 
         if(Input.GetMouseButtonDown(0)){
+            // Start painting
+            
             isPainting = true;
             normalizedStrokeTime = 0;
             nodeCount = -1;
             avgDirection = Vector2.zero;
+            curInk = initialInk;
+            lastInk = initialInk;
 
             lastPressure = 0.5f * brushSize;
             lastMousePos = new float[2]{
@@ -94,7 +100,8 @@ public class Painting : MonoBehaviour
 
             float pressureMult = (1f - Mathf.Pow(2*normalizedStrokeTime - 1f, 2));
             curPressure = Mathf.Lerp(pressureMult, 1f, 0.3f) * brushSize;
-
+            curInk = initialInk * (1f- Mathf.Pow(normalizedStrokeTime, 2));
+            
             Vector2 mouseDir = new Vector2(
                 curMousePos[0] - lastMousePos[0],
                 curMousePos[1] - lastMousePos[1]
@@ -119,6 +126,7 @@ public class Painting : MonoBehaviour
             
             lastMousePos = curMousePos;
             lastPressure = curPressure;
+            lastInk = curInk;
             normalizedStrokeTime += 0.5f * Time.deltaTime + 0.0005f * mouseDir.magnitude;
         }
         else{
@@ -133,7 +141,7 @@ public class Painting : MonoBehaviour
 
     void SetShaderData(){
         paintingMat.SetFloat("_StrokeTime", normalizedStrokeTime);
-        Debug.Log(normalizedStrokeTime);
+
         paintingMat.SetFloatArray("_LastMousePos", lastMousePos);
         paintingMat.SetFloatArray("_MousePos", curMousePos);
         paintingMat.SetFloatArray("_AvgMouseDir", new float[2]{avgDirection.x, avgDirection.y});
@@ -141,7 +149,8 @@ public class Painting : MonoBehaviour
         paintingMat.SetFloat("_LastPressure", lastPressure);
         paintingMat.SetFloat("_Pressure", curPressure);
             
-        paintingMat.SetFloat("_InitialInk", normalizedStrokeTime);
+        paintingMat.SetFloat("_Ink", curInk);
+        paintingMat.SetFloat("_LastInk", lastInk);
     }
 
     void ReadPixelsIntoSavedTexture(){
@@ -160,7 +169,6 @@ public class Painting : MonoBehaviour
             clearColorArray[i] = Color.white;
         paintingSavedTex.SetPixels(clearColorArray);
         paintingSavedTex.Apply();
-        Debug.Log("!!");
     }
 
 

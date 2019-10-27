@@ -29,7 +29,8 @@
             float _LastPressure;
             float _Pressure;
 
-            float _InitialInk;
+            float _LastInk;
+            float _Ink;
 
             fixed4 frag (v2f_init_customrendertexture  i) : SV_Target
             {
@@ -53,7 +54,7 @@
                 fixed projectLen = dot(lastMouseDir, deltaDir);
                 fixed2 projectOnMouseDelta = projectLen * deltaDir;
                 fixed2 normalOnMouseDelta = lastMouseDir - projectOnMouseDelta;
-                fixed expectedWidth = lerp(_LastPressure, _Pressure, pow(projectLen/deltaDist, 3));
+                fixed expectedWidth = lerp(_LastPressure, _Pressure, pow(projectLen / deltaDist, 2));
 
                 fixed density = 0;
                 if(     dot(lastMouseDir, deltaDir) > 0
@@ -65,7 +66,6 @@
                 else if(curDist < _Pressure){
                     density = 1;
                 }
-                density *= 0.5;
                 
                 // To prevent from painting pixel repeatly
                 /* 
@@ -84,7 +84,11 @@
                         (constraint with INK, Water, DirectionChange?)
 
                      *********************/
-                    
+                    fixed projectRatio = (projectLen) / (deltaDist + _Pressure);
+                    if(projectRatio >= 0)
+                        density *= lerp(_LastInk, _Ink, projectRatio);
+                    //density *= _LastInk;
+                
                     col.xyz -= fixed3(density, density, density);
                 }
 
